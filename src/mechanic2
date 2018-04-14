@@ -55,6 +55,7 @@ class Mech2MigrationCollector(object):
       self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, type=MECH2_SYSTEM_MIGRATION)
     self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs, type=MECH2_USER_MIGRATION)
     self._collectLocalMigrationsInto(migrations)
+    migrations.sort(key=lambda m: m.name)
     return migrations
 
   def _collectLocalMigrationsInto(self, migrations):
@@ -75,7 +76,6 @@ class Mech2MigrationCollector(object):
              migration = Mech2Migration(file=file,name=os.path.basename(file),type=type)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)
-    migrations.sort(key=lambda m: m.name)
 
 class Mech2Config(object):
   def __init__(self, env):
