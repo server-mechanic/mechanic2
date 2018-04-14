@@ -134,10 +134,12 @@ def main():
   verifier = Mech2MigrationVerifier(env=env)
   valid = verifier.verifyMigrations(migrations)
   if not valid:
-    sys.exit(1)
+    return 1
   executor = Mech2MigrationExecutor()
   migrator = Mech2Migrator(env=env, executor=executor)
   migrator.applyMigrations(migrations)
+  return 0
 
 if __name__ == "__main__":
-    main()
+  exitCode = main()
+  sys.exit(exitCode)
