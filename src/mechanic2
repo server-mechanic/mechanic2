@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import re
 import sys
+import optparse
 
 MECH2_SYSTEM_MIGRATION=0
 MECH2_USER_MIGRATION=1
@@ -19,6 +20,34 @@ MECH2_LOCAL_MIGRATION=2
 
 class Mech2Exception(Exception):
   pass
+
+MECH2_DEBUG=0
+MECH2_INFO=1
+MECH2_WARNING=2
+MECH2_ERROR=3
+
+class Mech2Logger(object):
+  def __init__(self, quiet=False):
+    self.quiet = quiet
+    self.logLevel = MECH2_WARNING
+
+  def debug(self, message, *args):
+    self._log(MECH2_DEBUG, message, *args)
+
+  def info(self, message, *args):
+    self._log(MECH2_INFO, message, *args)
+
+  def warn(self, message, *args):
+    self._log(MECH2_WARNING, message, *args)
+
+  def error(self, message, *args):
+    self._log(MECH2_ERROR, message, *args)
+
+  def _log(self, level, message, *args):
+    if not self.quiet and level >= self.logLevel:
+      print(message.format(*args))
+
+logger = Mech2Logger()
 
 class Mech2Env(object):
   def getRealUserHome(self):
@@ -78,7 +107,7 @@ class Mech2MigrationCollector(object):
                migrations.append(migration)
 
 class Mech2Config(object):
-  def __init__(self, env):
+  def __init__(self, env, options):
     self.userMigrationDirs = [ os.path.join(env.getRealUserHome(), ".mechanic2", "migration.d") ]
     self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
 
@@ -97,11 +126,9 @@ class Mech2MigrationExecutor(object):
       line = migrationProcess.stdout.readline()
       if not line:
         break;
-      print(line.strip())
+      logger.info(line.strip())
     exitCode = migrationProcess.wait()
     return exitCode
-    #print(command)
-    #return 0
 
 class Mech2MigrationVerifier(object):
   def __init__(self, env):
@@ -111,10 +138,10 @@ class Mech2MigrationVerifier(object):
     valid = True
     for migration in migrations:
       if not os.access(migration.file, os.X_OK):
-        print("{} ({}) is not executable.".format(migration.name, migration.file))
+        logger.error("{} ({}) is not executable.", migration.name, migration.file)
         valid = False
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        print("{} ({}) required root/admin privileges.".format(migration.name, migration.file))
+        logger.error("{} ({}) required root/admin privileges.", migration.name, migration.file)
         valid = False
     return valid
 
@@ -125,7 +152,7 @@ class Mech2Migrator(object):
 
   def applyMigrations(self, migrations):
     for migration in migrations:
-      print("Applying {}...".format(migration.name))
+      logger.info("Applying {}...", migration.name)
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
         raise Mech2Exception("{} requires root.".format(migration.file))
 
@@ -137,11 +164,23 @@ class Mech2Migrator(object):
         user = self.env.getRealUser()
       exitCode = self.executor.execute(migration=migration, user=user)
       if exitCode != 0:
-        print("{} failed.".format(migration.name))
+        logger.error("{} failed.", migration.name)
 
 def main():
+  optParser = optparse.OptionParser()
+  optParser.add_option("-q", "--quiet", action="store_true",
+                  dest="quiet", default=False,
+                  help="don't print anything to stdout")
+  optParser.add_option("-v", "--verbose", action="count",
+                  dest="logLevel", default=0,
+                  help="increase logging output")
+  
+  (options, args) = optParser.parse_args()
+  logger.quiet = options.quiet
+  logger.logLevel = logger.logLevel-options.logLevel
+
   env = Mech2Env()
-  config = Mech2Config(env=env)
+  config = Mech2Config(env=env, options=options)
   collector = Mech2MigrationCollector()
   migrations = collector.collectMigrations(env=env, config=config)
   verifier = Mech2MigrationVerifier(env=env)
