@@ -54,8 +54,17 @@ class Mech2MigrationCollector(object):
     if env.isEffectiveUserRoot():
       self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, type=MECH2_SYSTEM_MIGRATION)
     self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs, type=MECH2_USER_MIGRATION)
-    self._collectMigrationsInto(migrations=migrations, dirs=config.localMigrationDirs, type=MECH2_LOCAL_MIGRATION)
+    self._collectLocalMigrationsInto(migrations)
     return migrations
+
+  def _collectLocalMigrationsInto(self, migrations):
+    dir = os.getcwd()
+    while dir != "/":
+      migrationsDir = os.path.join(dir, ".mechanic2", "migration.d")
+      if os.path.isdir(migrationsDir):
+        self._collectMigrationsInto(migrations, [migrationsDir], MECH2_LOCAL_MIGRATION)
+        return
+      dir = os.path.dirname(dir)
 
   def _collectMigrationsInto(self, migrations, dirs, type):
     for dir in dirs:
@@ -63,14 +72,15 @@ class Mech2MigrationCollector(object):
         for file in os.listdir(dir):
           file = os.path.join(dir, file)
           if os.path.isfile(file):
-            migrations.append(Mech2Migration(file=file,name=os.path.basename(file),type=type))
+             migration = Mech2Migration(file=file,name=os.path.basename(file),type=type)
+             if not migration.file in [m.file for m in migrations]:
+               migrations.append(migration)
     migrations.sort(key=lambda m: m.name)
 
 class Mech2Config(object):
   def __init__(self, env):
     self.userMigrationDirs = [ os.path.join(env.getRealUserHome(), ".mechanic2", "migration.d") ]
     self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
-    self.localMigrationDirs = []
 
 class Mech2MigrationExecutor(object):
   def __init__(self):
