@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+#
+# mechanic2 - see github.com/server-mechanic/mechanic2
+# ```
+# curl https://raw.githubusercontent.com/server-mechanic/mechanic2/master/src/mechanic2 -o $HOME/bin/mechanic2
+# ```
+#
+
+import os
+import shutil
+import subprocess
+import re
+import sys
+
+MECH2_SYSTEM_MIGRATION=0
+MECH2_USER_MIGRATION=1
+MECH2_LOCAL_MIGRATION=2
+
+class Mech2Exception(Exception):
+  pass
+
+class Mech2Env(object):
+  def getRealUserHome(self):
+    return os.path.expanduser("~{}".format(self.getRealUser()))
+
+  def getRealUser(self):
+    return os.environ['USER']
+
+  def isRealUserRoot(self):
+    return self.getRealUser() == "root"
+
+  def isEffectiveUserRoot(self):
+    return os.geteuid() == 0
+
+class Mech2Migration(object):
+  def __init__(self, file, name, type):
+    self.file = file
+    self.type = type
+    self.name = name
+
+  def isSystemMigration(self):
+    return self.file == MECH2_SYSTEM_MIGRATION
+
+  def isRootRequired(self):
+    return self.isSystemMigration() or re.match("^.*as[_]?(root|admin)\\..*$", self.name.lower())
+
+class Mech2MigrationCollector(object):
+  def __init__self(object):
+    pass
+
+  def collectMigrations(self, env, config):
+    migrations = []
+    if env.isEffectiveUserRoot():
+      self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, type=MECH2_SYSTEM_MIGRATION)
+    self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs, type=MECH2_USER_MIGRATION)
+    self._collectMigrationsInto(migrations=migrations, dirs=config.localMigrationDirs, type=MECH2_LOCAL_MIGRATION)
+    return migrations
+
+  def _collectMigrationsInto(self, migrations, dirs, type):
+    for dir in dirs:
+      if os.path.isdir(dir):
+        for file in os.listdir(dir):
+          file = os.path.join(dir, file)
+          if os.path.isfile(file):
+            migrations.append(Mech2Migration(file=file,name=os.path.basename(file),type=type))
+    migrations.sort(key=lambda m: m.name)
+
+class Mech2Config(object):
+  def __init__(self, env):
+    self.userMigrationDirs = [ os.path.join(env.getRealUserHome(), ".mechanic2", "migration.d") ]
+    self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
+    self.localMigrationDirs = []
+
+class Mech2MigrationExecutor(object):
+  def __init__(self):
+    pass
+
+  def execute(self, migration, user=None):
+    if user is None:
+      command = [migration.file]
+    else:
+      command = ["su", user, "-c", migration.file ]
+
+    migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
+    while True:
+      line = migrationProcess.stdout.readline()
+      if not line:
+        break;
+      print(line.strip())
+    exitCode = migrationProcess.wait()
+    return exitCode
+    #print(command)
+    #return 0
+
+class Mech2MigrationVerifier(object):
+  def __init__(self, env):
+    self.env = env
+
+  def verifyMigrations(self, migrations):
+    valid = True
+    for migration in migrations:
+      if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
+        print("{} required root/admin privileges.".format(migration.name))
+        valid = False
+    return valid
+
+class Mech2Migrator(object):
+  def __init__(self, env, executor):
+    self.executor = executor
+    self.env = env
+
+  def applyMigrations(self, migrations):
+    for migration in migrations:
+      print("Applying {}...".format(migration.name))
+      if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
+        raise Mech2Exception("{} requires root.".format(migration.file))
+
+      user = None
+      if (not migration.isSystemMigration() 
+        and not migration.isRootRequired()
+        and self.env.isEffectiveUserRoot()
+        and not self.env.isRealUserRoot()):
+        user = self.env.getRealUser()
+      exitCode = self.executor.execute(migration=migration, user=user)
+      if exitCode != 0:
+        print("{} failed.".format(migration.name))
+
+def main():
+  env = Mech2Env()
+  config = Mech2Config(env=env)
+  collector = Mech2MigrationCollector()
+  migrations = collector.collectMigrations(env=env, config=config)
+  verifier = Mech2MigrationVerifier(env=env)
+  valid = verifier.verifyMigrations(migrations)
+  if not valid:
+    sys.exit(1)
+  executor = Mech2MigrationExecutor()
+  migrator = Mech2Migrator(env=env, executor=executor)
+  migrator.applyMigrations(migrations)
+
+if __name__ == "__main__":
+    main()
