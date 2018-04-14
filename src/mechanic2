@@ -110,8 +110,11 @@ class Mech2MigrationVerifier(object):
   def verifyMigrations(self, migrations):
     valid = True
     for migration in migrations:
+      if not os.access(migration.file, os.X_OK):
+        print("{} ({}) is not executable.".format(migration.name, migration.file))
+        valid = False
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        print("{} required root/admin privileges.".format(migration.name))
+        print("{} ({}) required root/admin privileges.".format(migration.name, migration.file))
         valid = False
     return valid
 
