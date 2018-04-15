@@ -24,6 +24,9 @@ class MechanicConfig(object):
 
   def _parseOpts(self, argv):
     optParser = optparse.OptionParser(usage="usage: mechanic2 [options] migrate|version")
+    optParser.add_option("-f", "--force", action="store_true",
+                  dest="force", default=False,
+                  help="force execution, ignore errors")
     optParser.add_option("-q", "--quiet", action="store_true",
                   dest="quiet", default=False,
                   help="don't print anything to stdout")
@@ -34,6 +37,7 @@ class MechanicConfig(object):
     (options, args) = optParser.parse_args()
     logger.quiet = options.quiet
     logger.logLevel = logger.logLevel-options.logLevel
+    self.force = options.force
     self.commands = self._parseCommands(argv[1:], optParser)
     self.followUpCommand = self._parseFollowUpCommand(argv[1:])
 

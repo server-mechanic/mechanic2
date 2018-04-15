@@ -52,8 +52,9 @@ class Mech2MigrationCollector(object):
                migrations.append(migration)
 
 class Mech2MigrationVerifier(object):
-  def __init__(self, env):
+  def __init__(self, env, config):
     self.env = env
+    self.config = config
 
   def verifyMigrations(self, migrations):
     valid = True
@@ -62,20 +63,24 @@ class Mech2MigrationVerifier(object):
         logger.error("Error: {} ({}) is not executable.", migration.name, migration.file)
         valid = False
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        logger.error("Error: {} ({}) required root/admin privileges.", migration.name, migration.file)
+        logger.error("Error: {} ({}) requires root/admin privileges.", migration.name, migration.file)
         valid = False
     return valid
 
 class Mech2Migrator(object):
-  def __init__(self, env, executor):
+  def __init__(self, env, config, executor):
     self.executor = executor
     self.env = env
+    self.config = config
 
   def applyMigrations(self, migrations):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        raise MechanicException("{} requires root.".format(migration.file))
+        if self.config.force:
+          logger.error("Error: {} requires root.", migration.name)
+        else:
+          raise MechanicException("{} requires root.".format(migration.name))
 
       user = None
       if (not migration.isSystemMigration() 
@@ -85,7 +90,10 @@ class Mech2Migrator(object):
         user = self.env.getRealUser()
       exitCode = self.executor.execute(migration=migration, user=user)
       if exitCode != 0:
-        logger.error("Error: {} failed.", migration.name)
+        if self.config.force:
+          logger.error("Error: {} failed.", migration.name)
+        else:
+          raise MechanicException("{} failed.".format(migration.name))
 
 class Mechanic(object):
   def __init__(self):
@@ -108,12 +116,12 @@ class Mechanic(object):
   def migrate(self):
     collector = Mech2MigrationCollector()
     migrations = collector.collectMigrations(env=self.env, config=self.config)
-    verifier = Mech2MigrationVerifier(env=self.env)
+    verifier = Mech2MigrationVerifier(env=self.env, config=self.config)
     valid = verifier.verifyMigrations(migrations)
-    if not valid:
+    if not valid and not self.config.force:
       return 1
     executor = MigrationExecutor()
-    migrator = Mech2Migrator(env=self.env, executor=executor)
+    migrator = Mech2Migrator(env=self.env, config=self.config, executor=executor)
     migrator.applyMigrations(migrations)
 
     exitCode = 0
