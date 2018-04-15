@@ -107,9 +107,24 @@ class Mech2MigrationCollector(object):
                migrations.append(migration)
 
 class Mech2Config(object):
-  def __init__(self, env, options):
+  def __init__(self, env, argv, options):
     self.userMigrationDirs = [ os.path.join(env.getRealUserHome(), ".mechanic2", "migration.d") ]
     self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
+    self.followUpCommand = self._parseFollowUpCommand(argv)
+
+    logger.debug("System migration dirs: {}", self.systemMigrationDirs)
+    logger.debug("User migration dirs: {}", self.userMigrationDirs)
+    logger.debug("Follow up command: {}", self.followUpCommand)
+
+  def _parseFollowUpCommand(self, argv):
+    followUpCommand = []
+    doubleDashSeen = False
+    for arg in argv:
+      if not doubleDashSeen and arg == "--":
+        doubleDashSeen = True
+      elif doubleDashSeen:
+        followUpCommand.append(arg)
+    return followUpCommand
 
 class Mech2MigrationExecutor(object):
   def __init__(self):
@@ -121,6 +136,7 @@ class Mech2MigrationExecutor(object):
     else:
       command = ["su", user, "-c", migration.file ]
 
+    logger.debug("Running command: {}", command)
     migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
     while True:
       line = migrationProcess.stdout.readline()
@@ -166,32 +182,58 @@ class Mech2Migrator(object):
       if exitCode != 0:
         logger.error("{} failed.", migration.name)
 
-def main():
-  optParser = optparse.OptionParser()
-  optParser.add_option("-q", "--quiet", action="store_true",
+class Mech2Mechanic(object):
+  def run(self):
+    optParser = optparse.OptionParser()
+    optParser.add_option("-q", "--quiet", action="store_true",
                   dest="quiet", default=False,
                   help="don't print anything to stdout")
-  optParser.add_option("-v", "--verbose", action="count",
+    optParser.add_option("-v", "--verbose", action="count",
                   dest="logLevel", default=0,
                   help="increase logging output")
   
-  (options, args) = optParser.parse_args()
-  logger.quiet = options.quiet
-  logger.logLevel = logger.logLevel-options.logLevel
+    (options, args) = optParser.parse_args()
+    logger.quiet = options.quiet
+    logger.logLevel = logger.logLevel-options.logLevel
 
-  env = Mech2Env()
-  config = Mech2Config(env=env, options=options)
-  collector = Mech2MigrationCollector()
-  migrations = collector.collectMigrations(env=env, config=config)
-  verifier = Mech2MigrationVerifier(env=env)
-  valid = verifier.verifyMigrations(migrations)
-  if not valid:
-    return 1
-  executor = Mech2MigrationExecutor()
-  migrator = Mech2Migrator(env=env, executor=executor)
-  migrator.applyMigrations(migrations)
-  return 0
+    env = Mech2Env()
+    config = Mech2Config(env=env, argv=sys.argv, options=options)
+    collector = Mech2MigrationCollector()
+    migrations = collector.collectMigrations(env=env, config=config)
+    verifier = Mech2MigrationVerifier(env=env)
+    valid = verifier.verifyMigrations(migrations)
+    if not valid:
+      return 1
+    executor = Mech2MigrationExecutor()
+    migrator = Mech2Migrator(env=env, executor=executor)
+    migrator.applyMigrations(migrations)
+
+    exitCode = 0
+    if len(config.followUpCommand) > 0:
+      exitCode = self._runFollowUpCommand(followUpCommand=config.followUpCommand, env=env)
+    return exitCode
+
+  def _runFollowUpCommand(self, followUpCommand, env):
+    try:
+      if env.isEffectiveUserRoot() and not env.isRealUserRoot():
+        followUpCommand2 = ['su', env.getRealUser(), '-c' ]
+        followUpCommand2.extend(followUpCommand)
+        logger.debug("Running follow up command: {}", followUpCommand2)
+        exitCode = os.execvpe(followUpCommand2[0], followUpCommand2, os.environ)
+      else:
+        logger.debug("Running follow up command: {}", followUpCommand)
+        exitCode = os.execvpe(followUpCommand[0], followUpCommand, os.environ)
+
+      logger.error("Running follow up command failed with {}.", exitCode)
+      if exitCode != 0:
+        return 1
+      else:
+        return 0
+    except Exception as e:
+      return 1
 
 if __name__ == "__main__":
-  exitCode = main()
+  exitCode = Mech2Mechanic().run()
+  sys.stdout.flush()
+  sys.stderr.flush()
   sys.exit(exitCode)
