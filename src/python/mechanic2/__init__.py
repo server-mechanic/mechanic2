@@ -13,17 +13,13 @@ import re
 import sys
 import optparse
 
+from mechanic2.mechanic_exception import MechanicException
+
 MECH2_VERSION=""
 
 MECH2_SYSTEM_MIGRATION=0
 MECH2_USER_MIGRATION=1
 MECH2_LOCAL_MIGRATION=2
-
-class Mech2Exception(Exception):
-  def __init__(self, message, exitCode=1, printUsage=False):
-    super(Mech2Exception, self).__init__(message)
-    self.exitCode = exitCode
-    self.printUsage = printUsage
 
 MECH2_DEBUG=0
 MECH2_INFO=1
@@ -139,11 +135,11 @@ class Mech2Config(object):
     if len(self.commands) == 0:
       logger.error("Error: No command given!")
       optParser.print_help()
-      raise Mech2Exception("")
+      raise MechanicException("")
     elif len(self.commands) > 1:
       logger.error("Error: Too many commands given!")
       optParser.print_help()
-      raise Mech2Exception("")
+      raise MechanicException("")
 
   def _parseCommands(self, args, optParser):
     commands = []
@@ -155,7 +151,7 @@ class Mech2Config(object):
         if not arg in ['migrate', 'version']:
           logger.error("Error: Unknown command: {}".format(arg))
           optParser.print_help()
-          raise Mech2Exception("")
+          raise MechanicException("")
         commands.append(arg)
     return commands
 
@@ -213,7 +209,7 @@ class Mech2Migrator(object):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        raise Mech2Exception("{} requires root.".format(migration.file))
+        raise MechanicException("{} requires root.".format(migration.file))
 
       user = None
       if (not migration.isSystemMigration() 
@@ -237,7 +233,7 @@ class Mech2Mechanic(object):
       elif command == 'version':
         return self.printVersion()
       else:
-        raise Mech2Exception("Unknown command {}.".format(command))
+        raise MechanicException("Unknown command {}.".format(command))
 
   def printVersion(self):
     print("mechanic2 {}".format(MECH2_VERSION))
@@ -257,7 +253,7 @@ class Mech2Mechanic(object):
     exitCode = 0
     if len(self.config.followUpCommand) > 0:
       exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
-      raise Mech2Exception("Follow up command exited with {}.", exitCode)
+      raise MechanicException("Follow up command exited with {}.", exitCode)
       return 1
 
     return exitCode
@@ -285,7 +281,7 @@ if __name__ == "__main__":
   exitCode = 1
   try:
     exitCode = Mech2Mechanic().run()
-  except Mech2Exception as e:
+  except MechanicException as e:
     if e.message != "":
       logger.error("Error: {}".format(e.message))
   finally:
