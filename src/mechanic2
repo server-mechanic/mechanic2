@@ -19,7 +19,10 @@ MECH2_USER_MIGRATION=1
 MECH2_LOCAL_MIGRATION=2
 
 class Mech2Exception(Exception):
-  pass
+  def __init__(self, message, exitCode=1, printUsage=False):
+    super(Mech2Exception, self).__init__(message)
+    self.exitCode = exitCode
+    self.printUsage = printUsage
 
 MECH2_DEBUG=0
 MECH2_INFO=1
@@ -107,19 +110,58 @@ class Mech2MigrationCollector(object):
                migrations.append(migration)
 
 class Mech2Config(object):
-  def __init__(self, env, argv, options):
+  def __init__(self, env, argv):
     self.userMigrationDirs = [ os.path.join(env.getRealUserHome(), ".mechanic2", "migration.d") ]
     self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
-    self.followUpCommand = self._parseFollowUpCommand(argv)
+    self._parseOpts(argv)
 
     logger.debug("System migration dirs: {}", self.systemMigrationDirs)
     logger.debug("User migration dirs: {}", self.userMigrationDirs)
+    logger.debug("Commands: {}", self.commands)
     logger.debug("Follow up command: {}", self.followUpCommand)
 
-  def _parseFollowUpCommand(self, argv):
+  def _parseOpts(self, argv):
+    optParser = optparse.OptionParser(usage="usage: %prog [options] migrate|version")
+    optParser.add_option("-q", "--quiet", action="store_true",
+                  dest="quiet", default=False,
+                  help="don't print anything to stdout")
+    optParser.add_option("-v", "--verbose", action="count",
+                  dest="logLevel", default=0,
+                  help="increase logging output")
+
+    (options, args) = optParser.parse_args()
+    logger.quiet = options.quiet
+    logger.logLevel = logger.logLevel-options.logLevel
+    self.commands = self._parseCommands(argv[1:], optParser)
+    self.followUpCommand = self._parseFollowUpCommand(argv[1:])
+
+    if len(self.commands) == 0:
+      logger.error("No command given!")
+      optParser.print_help()
+      raise Mech2Exception("")
+    elif len(self.commands) > 1:
+      logger.error("Too many commands given!")
+      optParser.print_help()
+      raise Mech2Exception("")
+
+  def _parseCommands(self, args, optParser):
+    commands = []
+    doubleDashSeen = False
+    for arg in args:
+      if not doubleDashSeen and arg == "--":
+        doubleDashSeen = True
+      elif not doubleDashSeen and not arg.startswith("-"):
+        if not arg in ['migrate', 'version']:
+          logger.error("Unknown command: {}".format(arg))
+          optParser.print_help()
+          raise Mech2Exception("")
+        commands.append(arg)
+    return commands
+
+  def _parseFollowUpCommand(self, args):
     followUpCommand = []
     doubleDashSeen = False
-    for arg in argv:
+    for arg in args:
       if not doubleDashSeen and arg == "--":
         doubleDashSeen = True
       elif doubleDashSeen:
@@ -142,7 +184,7 @@ class Mech2MigrationExecutor(object):
       line = migrationProcess.stdout.readline()
       if not line:
         break;
-      logger.info(line.strip())
+      logger.info("{}: {}", migration.name, line.strip())
     exitCode = migrationProcess.wait()
     return exitCode
 
@@ -185,40 +227,16 @@ class Mech2Migrator(object):
 class Mech2Mechanic(object):
   def __init__(self):
     self.env = Mech2Env()
+    self.config = Mech2Config(env=self.env, argv=sys.argv)
 
   def run(self):
-    optParser = optparse.OptionParser(usage="usage: %prog [options] migrate|version")
-    optParser.add_option("-q", "--quiet", action="store_true",
-                  dest="quiet", default=False,
-                  help="don't print anything to stdout")
-    optParser.add_option("-v", "--verbose", action="count",
-                  dest="logLevel", default=0,
-                  help="increase logging output")
-  
-    (options, args) = optParser.parse_args()
-    logger.quiet = options.quiet
-    logger.logLevel = logger.logLevel-options.logLevel
-    logger.debug("options={}, args={}", options, args)
-
-    self.config = Mech2Config(env=self.env, argv=sys.argv, options=options)
-
-    if len(args) == 0:
-      logger.error("No command given!")
-      optParser.print_help()
-      return 1
-    elif len(args) > 1:
-      logger.error("Too many commands given!")
-      optParser.print_help()
-      return 1
-    
-    for command in args:
+    for command in self.config.commands:
       if command == 'migrate':
         return self.migrate()
       elif command == 'version':
         return self.printVersion()
       else:
-        logger.error("Unknown command {}.", command)
-        return 1
+        raise Mech2Exception("Unknown command {}.".format(command))
 
   def printVersion(self):
     print("mechanic2 alpha")
@@ -238,7 +256,7 @@ class Mech2Mechanic(object):
     exitCode = 0
     if len(self.config.followUpCommand) > 0:
       exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
-      logger.error("Follow up command exited with {}.", exitCode)
+      raise Mech2Exception("Follow up command exited with {}.", exitCode)
       return 1
 
     return exitCode
@@ -263,7 +281,13 @@ class Mech2Mechanic(object):
       return 1
 
 if __name__ == "__main__":
-  exitCode = Mech2Mechanic().run()
-  sys.stdout.flush()
-  sys.stderr.flush()
-  sys.exit(exitCode)
+  exitCode = 1
+  try:
+    exitCode = Mech2Mechanic().run()
+  except Mech2Exception as e:
+    if e.message != "":
+      logger.error(e.message)
+  finally:
+    sys.stdout.flush()
+    sys.stderr.flush()
+    sys.exit(exitCode)
