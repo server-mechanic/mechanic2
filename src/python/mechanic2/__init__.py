@@ -14,6 +14,7 @@ import sys
 import optparse
 
 from mechanic2.exceptions import MechanicException
+from mechanic2.env import MechanicEnv
 
 MECH2_VERSION=""
 
@@ -48,19 +49,6 @@ class Mech2Logger(object):
       print(message.format(*args))
 
 logger = Mech2Logger()
-
-class Mech2Env(object):
-  def getRealUserHome(self):
-    return os.path.expanduser("~{}".format(self.getRealUser()))
-
-  def getRealUser(self):
-    return os.environ['USER']
-
-  def isRealUserRoot(self):
-    return self.getRealUser() == "root"
-
-  def isEffectiveUserRoot(self):
-    return os.geteuid() == 0
 
 class Mech2Migration(object):
   def __init__(self, file, name, type):
@@ -223,7 +211,7 @@ class Mech2Migrator(object):
 
 class Mech2Mechanic(object):
   def __init__(self):
-    self.env = Mech2Env()
+    self.env = MechanicEnv()
     self.config = Mech2Config(env=self.env, argv=sys.argv)
 
   def run(self):
