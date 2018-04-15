@@ -184,7 +184,7 @@ class Mech2Migrator(object):
 
 class Mech2Mechanic(object):
   def run(self):
-    optParser = optparse.OptionParser()
+    optParser = optparse.OptionParser(usage="usage: %prog [options] migrate|version")
     optParser.add_option("-q", "--quiet", action="store_true",
                   dest="quiet", default=False,
                   help="don't print anything to stdout")
@@ -195,22 +195,50 @@ class Mech2Mechanic(object):
     (options, args) = optParser.parse_args()
     logger.quiet = options.quiet
     logger.logLevel = logger.logLevel-options.logLevel
+    logger.debug("options={}, args={}", options, args)
 
-    env = Mech2Env()
-    config = Mech2Config(env=env, argv=sys.argv, options=options)
+    self.env = Mech2Env()
+    self.config = Mech2Config(env=self.env, argv=sys.argv, options=options)
+
+    if len(args) == 0:
+      logger.error("No command given!")
+      optParser.print_help()
+      return 1
+    elif len(args) > 1:
+      logger.error("Too many commands given!")
+      optParser.print_help()
+      return 1
+    
+    for command in args:
+      if command == 'migrate':
+        return self.migrate()
+      elif command == 'version':
+        return self.printVersion()
+      else:
+        logger.error("Unknown command {}.", command)
+        return 1
+
+  def printVersion(self):
+    print("mechanic2 alpha")
+    return 1
+
+  def migrate(self):
     collector = Mech2MigrationCollector()
-    migrations = collector.collectMigrations(env=env, config=config)
-    verifier = Mech2MigrationVerifier(env=env)
+    migrations = collector.collectMigrations(env=self.env, config=self.config)
+    verifier = Mech2MigrationVerifier(env=self.env)
     valid = verifier.verifyMigrations(migrations)
     if not valid:
       return 1
     executor = Mech2MigrationExecutor()
-    migrator = Mech2Migrator(env=env, executor=executor)
+    migrator = Mech2Migrator(env=self.env, executor=executor)
     migrator.applyMigrations(migrations)
 
     exitCode = 0
-    if len(config.followUpCommand) > 0:
-      exitCode = self._runFollowUpCommand(followUpCommand=config.followUpCommand, env=env)
+    if len(self.config.followUpCommand) > 0:
+      exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
+      logger.error("Follow up command exited with {}.", exitCode)
+      return 1
+
     return exitCode
 
   def _runFollowUpCommand(self, followUpCommand, env):
