@@ -1,0 +1,99 @@
+#!/bin/bash -e
+
+force="no"
+function parseOpts() {
+  for i in $*; do
+    case $i in
+      -f|--force)
+        force="yes"
+      ;;
+      *)
+        echo "Unknown flag $i; $0 [-f|--force]" >&2
+        exit 1
+    esac
+  done
+}
+
+if [[ "$force" != "yes" && "$UID" != "0" ]]; then
+ echo "Must be run as root."
+ exit 1
+fi
+
+UNINSTALLER_TMP_FILE=$(mktemp)
+UNINSTALLER_FILE=/usr/local/mechanic2/bin/uninstall.sh
+
+function checkForTools() {
+  local path=""
+  local tool=""
+
+  for tool in $*; do
+    path=$(which $tool)
+    if [[ -z "$path" ]]; then
+      echo "$tool not found."
+      exit 1 
+    fi
+  done
+}
+
+function streamTar() {
+  (cat - | base64 -d | gzip -d ) <<EOB
+BUNDLE_DATA_HERE
+EOB
+}
+
+function checkPreconditions() {
+  echo "Checking preconditions..."
+  checkForTools cat tar base64 gzip mktemp sed mv rmdir rm
+  streamTar | tar tf - | sed -r 's#\./(.*)$#/\\1#g' | (while read file; do
+    if [[ "$file" =~ ^.*[^/]$ ]]; then
+      if [[ -f "$file" ]]; then
+        echo "$file already exists; aborting."
+        exit 1
+      else
+        echo "$file - ok"
+      fi
+    else
+      echo "$file - ok"
+    fi
+  done)
+}
+
+function unpack() {
+  echo "Unpacking..."
+  streamTar | tar xvf - -C /
+}
+
+function generateUninstaller() {
+  echo "Generating uninstaller..."
+  streamTar | tar tf - | sort -r | sed -r 's#^/(.*)$#/\\1#g' | (cat - <<EOB
+#!/bin/bash -xe
+
+echo "Uninstalling..."
+EOB
+while read file; do
+    if [[ "$file" =~ ^.*/$ ]]; then
+      if [[ ! -d "$file" ]]; then
+        echo "rmdir \"/$file\""
+      fi
+    else
+      echo "rm \"/$file\"";
+    fi
+  done; cat - <<EOB
+echo "Done."
+
+exit 0
+EOB
+) >$UNINSTALLER_TMP_FILE
+}
+
+function relocateUninstaller() {
+  mv $UNINSTALLER_TMP_FILE $UNINSTALLER_FILE
+  chmod +x $UNINSTALLER_FILE
+}
+
+checkPreconditions
+generateUninstaller
+unpack
+relocateUninstaller
+
+exit 0

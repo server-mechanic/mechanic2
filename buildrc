@@ -1,0 +1,4 @@
+PROJECT_DIR=$(cd `dirname $0` && pwd)
+
+VERSION="0.1-$(date +%Y%m%d_%H%M%S)"
+LONG_VERSION="${VERSION} ($(cd ${PROJECT_DIR} && git describe --always --dirty))"

@@ -17,7 +17,7 @@ import re
 import sys
 import optparse
 
-MECH2_VERSION="dev (unknown)"
+MECH2_VERSION=""
 
 MECH2_SYSTEM_MIGRATION=0
 MECH2_USER_MIGRATION=1
@@ -126,7 +126,7 @@ class Mech2Config(object):
     logger.debug("Follow up command: {}", self.followUpCommand)
 
   def _parseOpts(self, argv):
-    optParser = optparse.OptionParser(usage="usage: %prog [options] migrate|version")
+    optParser = optparse.OptionParser(usage="usage: mechanic2 [options] migrate|version")
     optParser.add_option("-q", "--quiet", action="store_true",
                   dest="quiet", default=False,
                   help="don't print anything to stdout")
@@ -141,11 +141,11 @@ class Mech2Config(object):
     self.followUpCommand = self._parseFollowUpCommand(argv[1:])
 
     if len(self.commands) == 0:
-      logger.error("No command given!")
+      logger.error("Error: No command given!")
       optParser.print_help()
       raise Mech2Exception("")
     elif len(self.commands) > 1:
-      logger.error("Too many commands given!")
+      logger.error("Error: Too many commands given!")
       optParser.print_help()
       raise Mech2Exception("")
 
@@ -157,7 +157,7 @@ class Mech2Config(object):
         doubleDashSeen = True
       elif not doubleDashSeen and not arg.startswith("-"):
         if not arg in ['migrate', 'version']:
-          logger.error("Unknown command: {}".format(arg))
+          logger.error("Error: Unknown command: {}".format(arg))
           optParser.print_help()
           raise Mech2Exception("")
         commands.append(arg)
@@ -201,10 +201,10 @@ class Mech2MigrationVerifier(object):
     valid = True
     for migration in migrations:
       if not os.access(migration.file, os.X_OK):
-        logger.error("{} ({}) is not executable.", migration.name, migration.file)
+        logger.error("Error: {} ({}) is not executable.", migration.name, migration.file)
         valid = False
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        logger.error("{} ({}) required root/admin privileges.", migration.name, migration.file)
+        logger.error("Error: {} ({}) required root/admin privileges.", migration.name, migration.file)
         valid = False
     return valid
 
@@ -227,7 +227,7 @@ class Mech2Migrator(object):
         user = self.env.getRealUser()
       exitCode = self.executor.execute(migration=migration, user=user)
       if exitCode != 0:
-        logger.error("{} failed.", migration.name)
+        logger.error("Error: {} failed.", migration.name)
 
 class Mech2Mechanic(object):
   def __init__(self):
@@ -277,7 +277,7 @@ class Mech2Mechanic(object):
         logger.debug("Running follow up command: {}", followUpCommand)
         exitCode = os.execvpe(followUpCommand[0], followUpCommand, os.environ)
 
-      logger.error("Running follow up command failed with {}.", exitCode)
+      logger.error("Error: Running follow up command failed with {}.", exitCode)
       if exitCode != 0:
         return 1
       else:
@@ -291,7 +291,7 @@ if __name__ == "__main__":
     exitCode = Mech2Mechanic().run()
   except Mech2Exception as e:
     if e.message != "":
-      logger.error(e.message)
+      logger.error("Error: {}".format(e.message))
   finally:
     sys.stdout.flush()
     sys.stderr.flush()
