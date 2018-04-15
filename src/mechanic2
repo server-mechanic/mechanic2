@@ -14,6 +14,8 @@ import re
 import sys
 import optparse
 
+MECH2_VERSION="0.1dev (unknown)"
+
 MECH2_SYSTEM_MIGRATION=0
 MECH2_USER_MIGRATION=1
 MECH2_LOCAL_MIGRATION=2
@@ -239,7 +241,7 @@ class Mech2Mechanic(object):
         raise Mech2Exception("Unknown command {}.".format(command))
 
   def printVersion(self):
-    print("mechanic2 alpha")
+    print("mechanic2 {}".format(MECH2_VERSION))
     return 1
 
   def migrate(self):
