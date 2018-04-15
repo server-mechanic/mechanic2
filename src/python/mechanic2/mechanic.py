@@ -128,7 +128,6 @@ class Mechanic(object):
     if len(self.config.followUpCommand) > 0:
       exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
       raise MechanicException("Follow up command exited with {}.", exitCode)
-      
 
     return exitCode
 
