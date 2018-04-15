@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 
 import sys
 
-from mechanic2 import Mech2Mechanic, MechanicException
+from mechanic2.exceptions import MechanicException
+from mechanic2 import Mech2Mechanic
 
 if __name__ == "__main__":
   exitCode = 1

@@ -13,7 +13,7 @@ import re
 import sys
 import optparse
 
-from mechanic2.mechanic_exception import MechanicException
+from mechanic2.exceptions import MechanicException
 
 MECH2_VERSION=""
 
