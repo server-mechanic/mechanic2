@@ -16,36 +16,9 @@ import optparse
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
 from mechanic2.migration import MechanicMigration
+from mechanic2.logger import logger
 
 MECH2_VERSION=""
-
-MECH2_DEBUG=0
-MECH2_INFO=1
-MECH2_WARNING=2
-MECH2_ERROR=3
-
-class Mech2Logger(object):
-  def __init__(self, quiet=False):
-    self.quiet = quiet
-    self.logLevel = MECH2_INFO
-
-  def debug(self, message, *args):
-    self._log(MECH2_DEBUG, message, *args)
-
-  def info(self, message, *args):
-    self._log(MECH2_INFO, message, *args)
-
-  def warn(self, message, *args):
-    self._log(MECH2_WARNING, message, *args)
-
-  def error(self, message, *args):
-    self._log(MECH2_ERROR, message, *args)
-
-  def _log(self, level, message, *args):
-    if not self.quiet and level >= self.logLevel:
-      print(message.format(*args))
-
-logger = Mech2Logger()
 
 class Mech2MigrationCollector(object):
   def __init__self(object):
