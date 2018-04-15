@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-#
+
 # mechanic2 - see github.com/server-mechanic/mechanic2
-# ```
-# curl https://raw.githubusercontent.com/server-mechanic/mechanic2/master/src/mechanic2 -o $HOME/bin/mechanic2
-# ```
-#
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
