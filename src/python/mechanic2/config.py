@@ -24,6 +24,9 @@ class MechanicConfig(object):
 
   def _parseOpts(self, argv):
     optParser = optparse.OptionParser(usage="usage: mechanic2 [options] migrate|version")
+    optParser.add_option("-n", "--dry-run", action="store_true",
+                  dest="dryRun", default=False,
+                  help="apply no migrations, only simulate")
     optParser.add_option("-f", "--force", action="store_true",
                   dest="force", default=False,
                   help="force execution, ignore errors")
@@ -38,6 +41,7 @@ class MechanicConfig(object):
     logger.quiet = options.quiet
     logger.logLevel = logger.logLevel-options.logLevel
     self.force = options.force
+    self.dryRun = options.dryRun
     self.commands = self._parseCommands(argv[1:], optParser)
     self.followUpCommand = self._parseFollowUpCommand(argv[1:])
 

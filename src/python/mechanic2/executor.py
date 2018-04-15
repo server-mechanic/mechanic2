@@ -13,8 +13,8 @@ from mechanic2.migration import MechanicMigration
 from mechanic2.logger import logger
 
 class MigrationExecutor(object):
-  def __init__(self):
-    pass
+  def __init__(self, config):
+    self.config = config
 
   def execute(self, migration, user=None):
     if user is None:
@@ -22,12 +22,16 @@ class MigrationExecutor(object):
     else:
       command = ["su", user, "-c", migration.file ]
 
-    logger.debug("Running command: {}", command)
-    migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
-    while True:
-      line = migrationProcess.stdout.readline()
-      if not line:
-        break;
-      logger.info("{}: {}", migration.name, line.strip())
-    exitCode = migrationProcess.wait()
-    return exitCode
+    if not self.config.dryRun:
+      logger.debug("Running command: {}", command)
+      migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
+      while True:
+        line = migrationProcess.stdout.readline()
+        if not line:
+          break;
+        logger.info("{}: {}", migration.name, line.strip())
+      exitCode = migrationProcess.wait()
+      return exitCode
+    else:
+      logger.info("Would run command: {}", command)
+      return 0

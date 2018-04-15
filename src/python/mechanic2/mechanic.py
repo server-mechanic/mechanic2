@@ -120,7 +120,7 @@ class Mechanic(object):
     valid = verifier.verifyMigrations(migrations)
     if not valid and not self.config.force:
       return 1
-    executor = MigrationExecutor()
+    executor = MigrationExecutor(config=self.config)
     migrator = Mech2Migrator(env=self.env, config=self.config, executor=executor)
     migrator.applyMigrations(migrations)
 
@@ -128,7 +128,7 @@ class Mechanic(object):
     if len(self.config.followUpCommand) > 0:
       exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
       raise MechanicException("Follow up command exited with {}.", exitCode)
-      return 1
+      
 
     return exitCode
 
@@ -137,16 +137,19 @@ class Mechanic(object):
       if env.isEffectiveUserRoot() and not env.isRealUserRoot():
         followUpCommand2 = ['su', env.getRealUser(), '-c' ]
         followUpCommand2.extend(followUpCommand)
-        logger.debug("Running follow up command: {}", followUpCommand2)
-        exitCode = os.execvpe(followUpCommand2[0], followUpCommand2, os.environ)
+        if not self.config.dryRun:
+          logger.debug("Running follow up command: {}", followUpCommand2)
+          exitCode = os.execvpe(followUpCommand2[0], followUpCommand2, os.environ)
+        else:
+          logger.info("Would run follow up command: {}", followUpCommand2)
       else:
-        logger.debug("Running follow up command: {}", followUpCommand)
-        exitCode = os.execvpe(followUpCommand[0], followUpCommand, os.environ)
+        if not self.config.dryRun:
+          logger.debug("Running follow up command: {}", followUpCommand)
+          exitCode = os.execvpe(followUpCommand[0], followUpCommand, os.environ)
+        else:
+          logger.info("Would run follow up command: {}", followUpCommand2)
 
       logger.error("Error: Running follow up command failed with {}.", exitCode)
-      if exitCode != 0:
-        return 1
-      else:
-        return 0
+      return 1
     except Exception as e:
       return 1
