@@ -17,6 +17,7 @@ from mechanic2.migration import MechanicMigration
 from mechanic2.logger import logger
 from mechanic2.version import MECHANIC2_VERSION
 from mechanic2.config import MechanicConfig
+from mechanic2.executor import MigrationExecutor
 
 class Mech2MigrationCollector(object):
   def __init__self(object):
@@ -49,26 +50,6 @@ class Mech2MigrationCollector(object):
              migration = MechanicMigration(file=file,name=os.path.basename(file),systemMigration=systemMigration)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)
-
-class Mech2MigrationExecutor(object):
-  def __init__(self):
-    pass
-
-  def execute(self, migration, user=None):
-    if user is None:
-      command = [migration.file]
-    else:
-      command = ["su", user, "-c", migration.file ]
-
-    logger.debug("Running command: {}", command)
-    migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
-    while True:
-      line = migrationProcess.stdout.readline()
-      if not line:
-        break;
-      logger.info("{}: {}", migration.name, line.strip())
-    exitCode = migrationProcess.wait()
-    return exitCode
 
 class Mech2MigrationVerifier(object):
   def __init__(self, env):
@@ -131,7 +112,7 @@ class Mechanic(object):
     valid = verifier.verifyMigrations(migrations)
     if not valid:
       return 1
-    executor = Mech2MigrationExecutor()
+    executor = MigrationExecutor()
     migrator = Mech2Migrator(env=self.env, executor=executor)
     migrator.applyMigrations(migrations)
 
