@@ -17,7 +17,8 @@ import re
 import sys
 import optparse
 
-MECH2_VERSION="dev (unknown)"
+MECH2_VERSION="0.1"
+MECH2_COMMITISH="unknown"
 
 MECH2_SYSTEM_MIGRATION=0
 MECH2_USER_MIGRATION=1
@@ -134,7 +135,7 @@ class Mech2Config(object):
                   dest="logLevel", default=0,
                   help="increase logging output")
 
-    (options, args) = optParser.parse_args()
+    (options, args) = optParser.parse_args(argv)
     logger.quiet = options.quiet
     logger.logLevel = logger.logLevel-options.logLevel
     self.commands = self._parseCommands(argv[1:], optParser)
@@ -244,7 +245,7 @@ class Mech2Mechanic(object):
         raise Mech2Exception("Unknown command {}.".format(command))
 
   def printVersion(self):
-    print("mechanic2 {}".format(MECH2_VERSION))
+    print("mechanic2 {} ({})".format(MECH2_VERSION, MECH2_COMMITISH))
     return 1
 
   def migrate(self):
