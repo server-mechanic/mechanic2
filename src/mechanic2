@@ -183,6 +183,9 @@ class Mech2Migrator(object):
         logger.error("{} failed.", migration.name)
 
 class Mech2Mechanic(object):
+  def __init__(self):
+    self.env = Mech2Env()
+
   def run(self):
     optParser = optparse.OptionParser(usage="usage: %prog [options] migrate|version")
     optParser.add_option("-q", "--quiet", action="store_true",
@@ -197,7 +200,6 @@ class Mech2Mechanic(object):
     logger.logLevel = logger.logLevel-options.logLevel
     logger.debug("options={}, args={}", options, args)
 
-    self.env = Mech2Env()
     self.config = Mech2Config(env=self.env, argv=sys.argv, options=options)
 
     if len(args) == 0:
