@@ -2,7 +2,12 @@
 
 A prototype of the next generation mechanic.
 
-### STIL WORK IN PROGRESS!!!
+### STIL WORK IN PROGRESS!!! USE AT YOUR OWN RISK!!!
+
+## Try it out, if you dare
+```
+curl https://raw.githubusercontent.com/server-mechanic/packages/master/bash-installer/unstable/mechanic2/latest.sh | sudo bash
+```
 
 ## License
 
