@@ -17,8 +17,7 @@ from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
 from mechanic2.migration import MechanicMigration
 from mechanic2.logger import logger
-
-MECH2_VERSION=""
+from mechanic2.version import MECHANIC2_VERSION
 
 class Mech2MigrationCollector(object):
   def __init__self(object):
@@ -182,7 +181,7 @@ class Mech2Mechanic(object):
         raise MechanicException("Unknown command {}.".format(command))
 
   def printVersion(self):
-    print("mechanic2 {}".format(MECH2_VERSION))
+    print("mechanic2 {}".format(MECHANIC2_VERSION))
     return 1
 
   def migrate(self):

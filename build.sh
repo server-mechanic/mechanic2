@@ -15,7 +15,7 @@ function clean() {
 function copyFiles() {
   mkdir -p ${BUNDLE_BUILD_DIR}/usr/local/bin ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/ ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/
   cp -r ${SRC_DIR}/python/* ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/
-  perl -i -pe "s#MECH2_VERSION=\"\"#MECH2_VERSION=\"${LONG_VERSION}\"#g" ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/mechanic2/__init__.py
+  perl -i -pe "s#MECHANIC2_VERSION=\"\"#MECHANIC2_VERSION=\"${LONG_VERSION}\"#g" ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/mechanic2/version.py
   touch ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/uninstall.sh
   cp ${SRC_DIR}/bash/mechanic2 ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/
   ln -s ../mechanic2/bin/mechanic2 ${BUNDLE_BUILD_DIR}/usr/local/bin/mechanic2
