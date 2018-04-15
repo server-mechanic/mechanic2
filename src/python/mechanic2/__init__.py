@@ -15,12 +15,9 @@ import optparse
 
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
+from mechanic2.migration import MechanicMigration
 
 MECH2_VERSION=""
-
-MECH2_SYSTEM_MIGRATION=0
-MECH2_USER_MIGRATION=1
-MECH2_LOCAL_MIGRATION=2
 
 MECH2_DEBUG=0
 MECH2_INFO=1
@@ -50,18 +47,6 @@ class Mech2Logger(object):
 
 logger = Mech2Logger()
 
-class Mech2Migration(object):
-  def __init__(self, file, name, type):
-    self.file = file
-    self.type = type
-    self.name = name
-
-  def isSystemMigration(self):
-    return self.file == MECH2_SYSTEM_MIGRATION
-
-  def isRootRequired(self):
-    return self.isSystemMigration() or re.match("^.*as[_]?(root|admin)\\..*$", self.name.lower())
-
 class Mech2MigrationCollector(object):
   def __init__self(object):
     pass
@@ -69,8 +54,8 @@ class Mech2MigrationCollector(object):
   def collectMigrations(self, env, config):
     migrations = []
     if env.isEffectiveUserRoot():
-      self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, type=MECH2_SYSTEM_MIGRATION)
-    self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs, type=MECH2_USER_MIGRATION)
+      self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, systemMigration=True)
+    self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs)
     self._collectLocalMigrationsInto(migrations)
     migrations.sort(key=lambda m: m.name)
     return migrations
@@ -80,17 +65,17 @@ class Mech2MigrationCollector(object):
     while dir != "/":
       migrationsDir = os.path.join(dir, ".mechanic2", "migration.d")
       if os.path.isdir(migrationsDir):
-        self._collectMigrationsInto(migrations, [migrationsDir], MECH2_LOCAL_MIGRATION)
+        self._collectMigrationsInto(migrations, [migrationsDir])
         return
       dir = os.path.dirname(dir)
 
-  def _collectMigrationsInto(self, migrations, dirs, type):
+  def _collectMigrationsInto(self, migrations, dirs, systemMigration=False):
     for dir in dirs:
       if os.path.isdir(dir):
         for file in os.listdir(dir):
           file = os.path.join(dir, file)
           if os.path.isfile(file):
-             migration = Mech2Migration(file=file,name=os.path.basename(file),type=type)
+             migration = MechanicMigration(file=file,name=os.path.basename(file),systemMigration=systemMigration)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)
 
@@ -264,15 +249,3 @@ class Mech2Mechanic(object):
         return 0
     except Exception as e:
       return 1
-
-if __name__ == "__main__":
-  exitCode = 1
-  try:
-    exitCode = Mech2Mechanic().run()
-  except MechanicException as e:
-    if e.message != "":
-      logger.error("Error: {}".format(e.message))
-  finally:
-    sys.stdout.flush()
-    sys.stderr.flush()
-    sys.exit(exitCode)
