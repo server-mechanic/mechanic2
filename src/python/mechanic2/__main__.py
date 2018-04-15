@@ -7,12 +7,12 @@ from __future__ import unicode_literals
 import sys
 
 from mechanic2.exceptions import MechanicException
-from mechanic2 import Mech2Mechanic
+from mechanic2.mechanic import Mechanic
 
 if __name__ == "__main__":
   exitCode = 1
   try:
-    exitCode = Mech2Mechanic().run()
+    exitCode = Mechanic().run()
   except MechanicException as e:
     if e.message != "":
       print(e.message)
