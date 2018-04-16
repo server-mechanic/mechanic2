@@ -11,7 +11,11 @@ class MechanicEnv(object):
     return os.path.expanduser("~{}".format(self.getRealUser()))
 
   def getRealUser(self):
-    return os.environ['USER']
+    user = os.getenv("SUDO_USER")
+    if user != None:
+      return user
+    user = os.getenv("USER")
+    return user
 
   def isRealUserRoot(self):
     return self.getRealUser() == "root"
