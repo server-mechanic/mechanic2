@@ -1,12 +1,17 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
 sudo /target/bash-installer-*.sh
 
-cat - <<EOB
+cat - <<EOB | sudo bash
+#!/bin/bash
 mkdir -p /etc/mechanic2/migration.d/
-echo -n '#!/bin/bash -x\ntouch /marker' > /etc/mechanic2/migration.d/001_touch_root.sh
+echo -n "#!/bin/bash -e 
+touch /marker
+" > /etc/mechanic2/migration.d/001_touch_root.sh
 chmod 755 /etc/mechanic2/migration.d/001_touch_root.sh
-EOB | sudo bash
+EOB
+
+cat /etc/mechanic2/migration.d/001_touch_root.sh
 
 sudo /usr/local/bin/mechanic2 migrate
 
