@@ -16,8 +16,10 @@ if __name__ == "__main__":
   except MechanicException as e:
     if e.message != "":
       print(e.message)
-  except Exception as e:
+    else:
       traceback.print_exc()
+  except Error as e:
+    traceback.print_exc()
   finally:
     sys.stdout.flush()
     sys.stderr.flush()

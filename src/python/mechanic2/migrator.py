@@ -12,19 +12,21 @@ from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
 
 class Migrator(object):
-  def __init__(self, env, config, executor):
+  def __init__(self, env, executor):
     self.executor = executor
     self.env = env
-    self.config = config
 
-  def applyMigrations(self, migrations):
+  def verifyMigration(self, migration, ignoreErrors=False):
+    if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
+      if ignoreErrors:
+        logger.error("Error: {} requires root.", migration.name)
+      else:
+        raise MechanicException("Error: {} requires root.".format(migration.name))
+
+  def applyMigrations(self, migrations, ignoreErrors=False, executeMigrations=True, printWhatWouldBe=False):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
-      if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        if self.config.force or self.config.dryRun:
-          logger.error("Error: {} requires root.", migration.name)
-        else:
-          raise MechanicException("{} requires root.".format(migration.name))
+      self.verifyMigration(migration, ignoreErrors=ignoreErrors)
 
       user = None
       if (not migration.isSystemMigration() 
@@ -33,9 +35,9 @@ class Migrator(object):
         and not self.env.isRealUserRoot()):
         user = self.env.getRealUser()
 
-      exitCode = self.executor.execute(migration=migration, user=user)
+      exitCode = self.executor.execute(migration=migration, user=user, executeMigrations=executeMigrations, printWhatWouldBe=printWhatWouldBe)
       if exitCode != 0:
-        if self.config.force:
+        if ignoreErrors:
           logger.error("Error: {} failed.", migration.name)
         else:
-          raise MechanicException("{} failed.".format(migration.name))
+          raise MechanicException("Error: {} failed.".format(migration.name))

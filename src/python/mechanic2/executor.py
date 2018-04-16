@@ -16,16 +16,16 @@ class MigrationExecutor(object):
   def __init__(self, config):
     self.config = config
 
-  def execute(self, migration, user=None):
+  def execute(self, migration, user=None, executeMigrations=True, printWhatWouldBe=False):
     if user is None:
       command = [migration.file]
     else:
       command = ["su", user, "-c", migration.file ]
 
-    if not self.config.dryRun:
+    if executeMigrations:
       return self._executeMigration(migration, command)
     else:
-      return self._simulateExecuteMigration(migration, command)
+      return self._simulateExecuteMigration(migration, command, printWhatWouldBe)
 
   def _executeMigration(self, migration, command):
     logger.debug("Running command: {}", command)
@@ -38,6 +38,7 @@ class MigrationExecutor(object):
     exitCode = migrationProcess.wait()
     return exitCode
 
-  def _simulateExecuteMigration(self, migration, command):
-    logger.info("Would run command: {}", command)
+  def _simulateExecuteMigration(self, migration, command, printWhatWouldBe=False):
+    if printWhatWouldBe:
+      logger.info("Would run command: {}", command)
     return 0

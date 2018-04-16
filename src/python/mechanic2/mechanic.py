@@ -20,7 +20,6 @@ from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
 from mechanic2.collector import MigrationCollector
 from mechanic2.migrator import Migrator
-from mechanic2.verifier import Verifier
 
 class Mechanic(object):
   def __init__(self):
@@ -43,9 +42,7 @@ class Mechanic(object):
   def migrate(self):
     migrations = self._collectMigrations()
 
-    valid = self._verifyMigrations(migrations)
-    if not valid and not self.config.force:
-      return 1
+    self._verifyMigrations(migrations)
 
     self._applyMigrations(migrations)
 
@@ -62,14 +59,16 @@ class Mechanic(object):
     return migrations
 
   def _verifyMigrations(self, migrations):
-    verifier = Verifier(env=self.env, config=self.config)
-    valid = verifier.verifyMigrations(migrations)
-    return valid
+    executor = MigrationExecutor(config=self.config)
+    migrator = Migrator(env=self.env, executor=executor)
+    migrator.applyMigrations(migrations, ignoreErrors=False, executeMigrations=False, printWhatWouldBe=False)
 
   def _applyMigrations(self, migrations):
     executor = MigrationExecutor(config=self.config)
-    migrator = Migrator(env=self.env, config=self.config, executor=executor)
-    migrator.applyMigrations(migrations)
+    migrator = Migrator(env=self.env, executor=executor)
+    migrator.applyMigrations(migrations, ignoreErrors=self.config.force,
+                             executeMigrations=not self.config.dryRun, 
+                             printWhatWouldBe=self.config.dryRun)
 
   def _runFollowUpCommand(self, followUpCommand, env):
     try:
