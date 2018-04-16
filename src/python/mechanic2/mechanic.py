@@ -37,7 +37,7 @@ class Mechanic(object):
 
   def printVersion(self):
     print("mechanic2 {}".format(MECHANIC2_VERSION))
-    return 1
+    return 0
 
   def migrate(self):
     migrations = self._collectMigrations()

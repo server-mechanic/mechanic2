@@ -34,7 +34,27 @@ function createPackages() {
   ${PROJECT_DIR}/packaging/bash-installer/build.sh ${VERSION}
 }
 
+function buildTestContainer() {
+  cd ${PROJECT_DIR}/test-container && \
+	docker build -f Dockerfile --tag mechanic2-test:local .
+}
+
+function runIntegrationTests() {
+  for testDir in ${PROJECT_DIR}/integration-tests/*; do
+    docker run \
+	-v ${testDir}:/build \
+	-v ${PROJECT_DIR}/target:/target \
+	mechanic2-test:local /build/run.sh
+    TEST_RESULT=$?
+    if [ "x0" != "x${TEST_RESULT}" ]; then
+      echo "$(basename $testDir) failed with exit code ${TEST_RESULT}."
+    fi
+  done
+}
+
 clean
 copyFiles
 createArchive
 createPackages
+buildTestContainer
+runIntegrationTests
