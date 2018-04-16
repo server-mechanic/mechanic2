@@ -7,16 +7,25 @@ from __future__ import unicode_literals
 import os
 
 from mechanic2.logger import logger
+from mechanic2.migration import MechanicMigration
+from mechanic2.config import MechanicConfig
+from mechanic2.env import MechanicEnv
 
 class MigrationCollector(object):
   def __init__(self):
     pass
 
   def collectMigrations(self, env, config):
+    logger.debug("Collecting migrations...")
     migrations = []
     if env.isEffectiveUserRoot():
+      logger.debug("Collecting system migrations...")
       self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, systemMigration=True)
+
+    logger.debug("Collecting user migrations...")
     self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs)
+
+    logger.debug("Collecting local migrations...")
     self._collectLocalMigrationsInto(migrations)
     migrations.sort(key=lambda m: m.name)
     return migrations
@@ -31,11 +40,13 @@ class MigrationCollector(object):
       dir = os.path.dirname(dir)
 
   def _collectMigrationsInto(self, migrations, dirs, systemMigration=False):
+    logger.debug("Collecting migrations from {}...", dirs)
     for dir in dirs:
       if os.path.isdir(dir):
         for file in os.listdir(dir):
           file = os.path.join(dir, file)
           if os.path.isfile(file):
+             logger.debug("Found migration at {}...", file)
              migration = MechanicMigration(file=file,name=os.path.basename(file),systemMigration=systemMigration)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)
