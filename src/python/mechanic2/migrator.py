@@ -21,7 +21,7 @@ class Migrator(object):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
       if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        if self.config.force:
+        if self.config.force or self.config.dryRun:
           logger.error("Error: {} requires root.", migration.name)
         else:
           raise MechanicException("{} requires root.".format(migration.name))
@@ -32,6 +32,7 @@ class Migrator(object):
         and self.env.isEffectiveUserRoot()
         and not self.env.isRealUserRoot()):
         user = self.env.getRealUser()
+
       exitCode = self.executor.execute(migration=migration, user=user)
       if exitCode != 0:
         if self.config.force:

@@ -23,15 +23,21 @@ class MigrationExecutor(object):
       command = ["su", user, "-c", migration.file ]
 
     if not self.config.dryRun:
-      logger.debug("Running command: {}", command)
-      migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
-      while True:
-        line = migrationProcess.stdout.readline()
-        if not line:
-          break;
-        logger.info("{}: {}", migration.name, line.strip())
-      exitCode = migrationProcess.wait()
-      return exitCode
+      return self._executeMigration(migration, command)
     else:
-      logger.info("Would run command: {}", command)
-      return 0
+      return self._simulateExecuteMigration(migration, command)
+
+  def _executeMigration(self, migration, command):
+    logger.debug("Running command: {}", command)
+    migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
+    while True:
+      line = migrationProcess.stdout.readline()
+      if not line:
+        break;
+      logger.info("{}: {}", migration.name, line.strip())
+    exitCode = migrationProcess.wait()
+    return exitCode
+
+  def _simulateExecuteMigration(self, migration, command):
+    logger.info("Would run command: {}", command)
+    return 0
