@@ -8,8 +8,8 @@ if [[ -d "$SCRIPT_DIR/../python/mechanic2/" ]]; then
   export PYTHONPATH=$PYTHONPATH:$SCRIPT_DIR/../python/
 fi
 
-if [[ -d "$MECHANIC_ROOT_DIR/usr/local/mechanic2/lib/" ]]; then
-  export PYTHONPATH="$PYTHONPATH:$MECHANIC_ROOT_DIR/usr/local/mechanic2/lib/"
+if [[ -d "$MECHANIC2_ROOT_DIR/usr/local/mechanic2/lib/" ]]; then
+  export PYTHONPATH="$PYTHONPATH:$MECHANIC2_ROOT_DIR/usr/local/mechanic2/lib/"
 fi
 
 export PYTHONDONTWRITEBYTECODE=dontdothis
