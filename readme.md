@@ -1,6 +1,9 @@
 # Server Mechanic 2 ![Written in Python](https://img.shields.io/badge/python-2.7,%203.2,%203.3,%203.4,%203.5-blue.svg) [![License](https://img.shields.io/badge/License-GPL%203-yellow.svg)](http://www.gnu.org/licenses/)
 
 A prototype of the next generation mechanic.
+![Server Mechanic](https://server-mechanic.github.io/website/images/mechanic_small.png "Server Mechanic")
+
+#### Evolve your servers, virtual machines and containers more easily.
 
 ### STIL WORK IN PROGRESS!!! USE AT YOUR OWN RISK!!!
 
