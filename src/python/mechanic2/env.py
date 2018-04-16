@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
+import getpass
 
 class MechanicEnv(object):
   def getRealUserHome(self):
@@ -15,6 +16,9 @@ class MechanicEnv(object):
     if user != None:
       return user
     user = os.getenv("USER")
+    if user != None:
+      return user
+    user = getpass.getuser()
     return user
 
   def isRealUserRoot(self):
