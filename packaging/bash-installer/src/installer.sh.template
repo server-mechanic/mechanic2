@@ -44,7 +44,7 @@ EOB
 function checkPreconditions() {
   echo "Checking preconditions..."
   checkForTools cat tar base64 gzip mktemp sed mv rmdir rm
-  streamTar | tar tf - | sed -r 's#\./(.*)$#/\\1#g' | (while read file; do
+  streamTar | tar tf - | sed -r 's#^/(.*)$#/\\1#g' | (while read file; do
     if [[ "$file" =~ ^.*[^/]$ ]]; then
       if [[ -f "$file" ]]; then
         echo "$file already exists; aborting."
@@ -65,7 +65,7 @@ function unpack() {
 
 function generateUninstaller() {
   echo "Generating uninstaller..."
-  streamTar | tar tf - | sort -r | sed -r 's#^/(.*)$#/\\1#g' | (cat - <<EOB
+  streamTar | tar tf - | grep -v -e '^usr/local/$' | grep -v -e '^usr/$' | sort -r | sed -r 's#^/(.*)$#/\\1#g' | (cat - <<EOB
 #!/bin/bash -xe
 
 echo "Uninstalling..."
