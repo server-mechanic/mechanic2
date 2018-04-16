@@ -18,38 +18,7 @@ from mechanic2.logger import logger
 from mechanic2.version import MECHANIC2_VERSION
 from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
-
-class Mech2MigrationCollector(object):
-  def __init__self(object):
-    pass
-
-  def collectMigrations(self, env, config):
-    migrations = []
-    if env.isEffectiveUserRoot():
-      self._collectMigrationsInto(migrations=migrations, dirs=config.systemMigrationDirs, systemMigration=True)
-    self._collectMigrationsInto(migrations=migrations, dirs=config.userMigrationDirs)
-    self._collectLocalMigrationsInto(migrations)
-    migrations.sort(key=lambda m: m.name)
-    return migrations
-
-  def _collectLocalMigrationsInto(self, migrations):
-    dir = os.getcwd()
-    while dir != "/":
-      migrationsDir = os.path.join(dir, ".mechanic2", "migration.d")
-      if os.path.isdir(migrationsDir):
-        self._collectMigrationsInto(migrations, [migrationsDir])
-        return
-      dir = os.path.dirname(dir)
-
-  def _collectMigrationsInto(self, migrations, dirs, systemMigration=False):
-    for dir in dirs:
-      if os.path.isdir(dir):
-        for file in os.listdir(dir):
-          file = os.path.join(dir, file)
-          if os.path.isfile(file):
-             migration = MechanicMigration(file=file,name=os.path.basename(file),systemMigration=systemMigration)
-             if not migration.file in [m.file for m in migrations]:
-               migrations.append(migration)
+from mechanic2.collector import MigrationCollector
 
 class Mech2MigrationVerifier(object):
   def __init__(self, env, config):
@@ -114,7 +83,7 @@ class Mechanic(object):
     return 1
 
   def migrate(self):
-    collector = Mech2MigrationCollector()
+    collector = MigrationCollector()
     migrations = collector.collectMigrations(env=self.env, config=self.config)
     verifier = Mech2MigrationVerifier(env=self.env, config=self.config)
     valid = verifier.verifyMigrations(migrations)
