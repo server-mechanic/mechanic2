@@ -19,6 +19,7 @@ from mechanic2.version import MECHANIC2_VERSION
 from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
 from mechanic2.collector import MigrationCollector
+from mechanic2.migrator import Migrator
 
 class Mech2MigrationVerifier(object):
   def __init__(self, env, config):
@@ -35,34 +36,6 @@ class Mech2MigrationVerifier(object):
         logger.error("Error: {} ({}) requires root/admin privileges.", migration.name, migration.file)
         valid = False
     return valid
-
-class Mech2Migrator(object):
-  def __init__(self, env, config, executor):
-    self.executor = executor
-    self.env = env
-    self.config = config
-
-  def applyMigrations(self, migrations):
-    for migration in migrations:
-      logger.info("Applying {}...", migration.name)
-      if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        if self.config.force:
-          logger.error("Error: {} requires root.", migration.name)
-        else:
-          raise MechanicException("{} requires root.".format(migration.name))
-
-      user = None
-      if (not migration.isSystemMigration() 
-        and not migration.isRootRequired()
-        and self.env.isEffectiveUserRoot()
-        and not self.env.isRealUserRoot()):
-        user = self.env.getRealUser()
-      exitCode = self.executor.execute(migration=migration, user=user)
-      if exitCode != 0:
-        if self.config.force:
-          logger.error("Error: {} failed.", migration.name)
-        else:
-          raise MechanicException("{} failed.".format(migration.name))
 
 class Mechanic(object):
   def __init__(self):
@@ -90,7 +63,7 @@ class Mechanic(object):
     if not valid and not self.config.force:
       return 1
     executor = MigrationExecutor(config=self.config)
-    migrator = Mech2Migrator(env=self.env, config=self.config, executor=executor)
+    migrator = Migrator(env=self.env, config=self.config, executor=executor)
     migrator.applyMigrations(migrations)
 
     exitCode = 0
