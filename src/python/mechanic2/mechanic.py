@@ -20,22 +20,7 @@ from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
 from mechanic2.collector import MigrationCollector
 from mechanic2.migrator import Migrator
-
-class Mech2MigrationVerifier(object):
-  def __init__(self, env, config):
-    self.env = env
-    self.config = config
-
-  def verifyMigrations(self, migrations):
-    valid = True
-    for migration in migrations:
-      if not os.access(migration.file, os.X_OK):
-        logger.error("Error: {} ({}) is not executable.", migration.name, migration.file)
-        valid = False
-      if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-        logger.error("Error: {} ({}) requires root/admin privileges.", migration.name, migration.file)
-        valid = False
-    return valid
+from mechanic2.verifier import Verifier
 
 class Mechanic(object):
   def __init__(self):
@@ -56,15 +41,13 @@ class Mechanic(object):
     return 1
 
   def migrate(self):
-    collector = MigrationCollector()
-    migrations = collector.collectMigrations(env=self.env, config=self.config)
-    verifier = Mech2MigrationVerifier(env=self.env, config=self.config)
-    valid = verifier.verifyMigrations(migrations)
+    migrations = self._collectMigrations()
+
+    valid = self._verifyMigrations(migrations)
     if not valid and not self.config.force:
       return 1
-    executor = MigrationExecutor(config=self.config)
-    migrator = Migrator(env=self.env, config=self.config, executor=executor)
-    migrator.applyMigrations(migrations)
+
+    self._applyMigrations(migrations)
 
     exitCode = 0
     if len(self.config.followUpCommand) > 0:
@@ -72,6 +55,21 @@ class Mechanic(object):
       raise MechanicException("Follow up command exited with {}.", exitCode)
 
     return exitCode
+
+  def _collectMigrations(self):
+    collector = MigrationCollector()
+    migrations = collector.collectMigrations(env=self.env, config=self.config)
+    return migrations
+
+  def _verifyMigrations(self, migrations):
+    verifier = Verifier(env=self.env, config=self.config)
+    valid = verifier.verifyMigrations(migrations)
+    return valid
+
+  def _applyMigrations(self, migrations):
+    executor = MigrationExecutor(config=self.config)
+    migrator = Migrator(env=self.env, config=self.config, executor=executor)
+    migrator.applyMigrations(migrations)
 
   def _runFollowUpCommand(self, followUpCommand, env):
     try:
