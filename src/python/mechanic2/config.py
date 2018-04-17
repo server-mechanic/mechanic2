@@ -17,6 +17,11 @@ class MechanicConfig(object):
     self.systemMigrationDirs = [ "/etc/mechanic2/migration.d" ]
     self._parseOpts(argv)
 
+    logger.debug("Real user: {}", env.getRealUser())
+    logger.debug("Real user home: {}", env.getRealUserHome())
+    logger.debug("Real user is root: {}", env.isRealUserRoot())
+    logger.debug("Effective user is root: {}", env.isEffectiveUserRoot())
+
     logger.debug("System migration dirs: {}", self.systemMigrationDirs)
     logger.debug("User migration dirs: {}", self.userMigrationDirs)
     logger.debug("Commands: {}", self.commands)

@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
-import getpass
+import pwd
 
 class MechanicEnv(object):
   def getRealUserHome(self):
@@ -15,11 +15,20 @@ class MechanicEnv(object):
     user = os.getenv("SUDO_USER")
     if user != None:
       return user
+
+    user = os.getenv("LOGNAME")
+    if user != None:
+      return user
+
     user = os.getenv("USER")
     if user != None:
       return user
-    user = getpass.getuser()
-    return user
+
+    user = pwd.getpwuid(os.getuid())[0]
+    if user != None:
+      return user
+
+    raise MechanicException("Cannot determine real user name.")
 
   def isRealUserRoot(self):
     return self.getRealUser() == "root"
