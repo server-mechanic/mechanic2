@@ -16,17 +16,10 @@ class Migrator(object):
     self.executor = executor
     self.env = env
 
-  def _verifyMigration(self, migration, ignoreErrors=False):
-    if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
-      if ignoreErrors:
-        logger.error("Error: {} requires root.", migration.name)
-      else:
-        raise MechanicException("Error: {} requires root.".format(migration.name))
-
-  def applyMigrations(self, migrations, ignoreErrors=False, executeMigrations=True, printWhatWouldBe=noopLogger):
+  def applyMigrations(self, migrations, handleError, executeMigrations=True, printWhatWouldBe=noopLogger):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
-      self._verifyMigration(migration, ignoreErrors=ignoreErrors)
+      self._verifyMigration(migration, handleError=handleError)
 
       user = None
       if (not migration.isSystemMigration() 
@@ -35,9 +28,8 @@ class Migrator(object):
         and not self.env.isRealUserRoot()):
         user = self.env.getRealUser()
 
-      exitCode = self.executor.execute(migration=migration, user=user, executeMigrations=executeMigrations, printWhatWouldBe=printWhatWouldBe)
-      if exitCode != 0:
-        if ignoreErrors:
-          logger.error("Error: {} failed.", migration.name)
-        else:
-          raise MechanicException("Error: {} failed.".format(migration.name))
+      self.executor.execute(migration=migration, user=user, executeMigrations=executeMigrations, printWhatWouldBe=printWhatWouldBe, handleError=handleError)
+
+  def _verifyMigration(self, migration, handleError):
+    if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
+      handleError("Error: {} requires root.", migration.name)

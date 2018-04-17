@@ -16,18 +16,18 @@ class MigrationExecutor(object):
   def __init__(self, config):
     self.config = config
 
-  def execute(self, migration, user=None, executeMigrations=True, printWhatWouldBe=noopLogger):
+  def execute(self, migration, handleError, user=None, executeMigrations=True, printWhatWouldBe=noopLogger):
     if user is None:
       command = [migration.file]
     else:
       command = ["su", user, "-c", migration.file ]
 
     if executeMigrations:
-      return self._executeMigration(migration, command)
+      self._executeMigration(migration, command, handleError=handleError)
     else:
-      return self._simulateExecuteMigration(migration, command, printWhatWouldBe)
+      self._simulateExecuteMigration(migration, command, printWhatWouldBe)
 
-  def _executeMigration(self, migration, command):
+  def _executeMigration(self, migration, command, handleError):
     logger.debug("Running command: {}", command)
     migrationProcess = subprocess.Popen(command,bufsize=0,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=None,shell=False,cwd=os.path.dirname(migration.file))
     while True:
@@ -36,8 +36,8 @@ class MigrationExecutor(object):
         break;
       logger.info("{}: {}", migration.name, line.strip())
     exitCode = migrationProcess.wait()
-    return exitCode
+    if exitCode != 0:
+      handleError("{} failed with exit code {}.", migration.name, exitCode)
 
   def _simulateExecuteMigration(self, migration, command, printWhatWouldBe=noopLogger):
     printWhatWouldBe.info("Would run command: {}", command)
-    return 0

@@ -20,6 +20,12 @@ from mechanic2.executor import MigrationExecutor
 from mechanic2.collector import MigrationCollector
 from mechanic2.migrator import Migrator
 
+def _raiseError(*kargs):
+  raise MechanicException(message=kargs[0].format(kargs[1:]))
+
+def _logError(*kargs):
+  logger.error(*kargs)
+
 class Mechanic(object):
   def __init__(self):
     self.env = MechanicEnv()
@@ -28,27 +34,23 @@ class Mechanic(object):
   def run(self):
     for command in self.config.commands:
       if command == 'migrate':
-        return self.migrate()
+        self.migrate()
       elif command == 'version':
-        return self.printVersion()
+        self.printVersion()
       else:
         raise MechanicException("Unknown command {}.".format(command))
 
   def printVersion(self):
     print("mechanic2 {}".format(MECHANIC2_VERSION))
-    return 0
 
   def migrate(self):
     migrations = self._collectMigrations()
 
     self._applyMigrations(migrations)
 
-    exitCode = 0
     if len(self.config.followUpCommand) > 0:
       exitCode = self._runFollowUpCommand(followUpCommand=self.config.followUpCommand, env=self.env)
       raise MechanicException("Follow up command exited with {}.", exitCode)
-
-    return exitCode
 
   def _collectMigrations(self):
     collector = MigrationCollector()
@@ -62,7 +64,13 @@ class Mechanic(object):
       printWhatWouldBe = logger
     else:
       printWhatWouldBe = noopLogger
-    migrator.applyMigrations(migrations, ignoreErrors=self.config.force,
+
+    if self.config.force:
+      handleError = _logError
+    else:
+      handleError = _raiseError
+
+    migrator.applyMigrations(migrations, handleError=handleError,
                              executeMigrations=not self.config.dryRun, 
                              printWhatWouldBe=printWhatWouldBe)
 
@@ -83,7 +91,7 @@ class Mechanic(object):
         else:
           logger.info("Would run follow up command: {}", followUpCommand2)
 
-      logger.error("Error: Running follow up command failed with {}.", exitCode)
-      return 1
+      raise MechanicException("Running follow up command failed with {}.", exitCode)
+
     except Exception as e:
-      return 1
+      raise MechanicException("Running follow up command failed with {}", e.message)

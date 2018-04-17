@@ -48,10 +48,12 @@ function runIntegrationTests() {
     TEST_RESULT=$?
     if [ "x0" != "x${TEST_RESULT}" ]; then
       echo "$(basename $testDir) failed with exit code ${TEST_RESULT}."
+      return 1
     else
       echo "$(basename $testDir) OK."
     fi
   done
+  echo "All integration tests OK."
 }
 
 clean

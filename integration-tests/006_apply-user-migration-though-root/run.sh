@@ -1,10 +1,10 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 sudo /target/bash-installer-*.sh
 
 mkdir -p $HOME/.mechanic2/migration.d/
 
-echo -n "#!/bin/bash -e
+echo -n "#!/bin/bash -ex
 touch \$HOME/marker
 " > $HOME/.mechanic2/migration.d/001_touch_home_file.sh
 chmod 755 $HOME/.mechanic2/migration.d/001_touch_home_file.sh
