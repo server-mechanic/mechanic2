@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import re
 import sys
-import optparse
 
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
