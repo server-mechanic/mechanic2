@@ -31,3 +31,5 @@ class MechanicLogger(object):
       print(message.format(*args))
 
 logger = MechanicLogger()
+
+noopLogger = MechanicLogger(quiet=True)

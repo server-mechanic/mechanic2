@@ -13,7 +13,7 @@ import sys
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
 from mechanic2.migration import MechanicMigration
-from mechanic2.logger import logger
+from mechanic2.logger import logger, noopLogger
 from mechanic2.version import MECHANIC2_VERSION
 from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
@@ -41,8 +41,6 @@ class Mechanic(object):
   def migrate(self):
     migrations = self._collectMigrations()
 
-    self._verifyMigrations(migrations)
-
     self._applyMigrations(migrations)
 
     exitCode = 0
@@ -57,17 +55,16 @@ class Mechanic(object):
     migrations = collector.collectMigrations(env=self.env, config=self.config)
     return migrations
 
-  def _verifyMigrations(self, migrations):
-    executor = MigrationExecutor(config=self.config)
-    migrator = Migrator(env=self.env, executor=executor)
-    migrator.applyMigrations(migrations, ignoreErrors=False, executeMigrations=False, printWhatWouldBe=False)
-
   def _applyMigrations(self, migrations):
     executor = MigrationExecutor(config=self.config)
     migrator = Migrator(env=self.env, executor=executor)
+    if self.config.dryRun:
+      printWhatWouldBe = logger
+    else:
+      printWhatWouldBe = noopLogger
     migrator.applyMigrations(migrations, ignoreErrors=self.config.force,
                              executeMigrations=not self.config.dryRun, 
-                             printWhatWouldBe=self.config.dryRun)
+                             printWhatWouldBe=printWhatWouldBe)
 
   def _runFollowUpCommand(self, followUpCommand, env):
     try:

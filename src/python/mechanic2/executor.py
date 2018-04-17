@@ -10,13 +10,13 @@ import subprocess
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
 from mechanic2.migration import MechanicMigration
-from mechanic2.logger import logger
+from mechanic2.logger import logger, noopLogger
 
 class MigrationExecutor(object):
   def __init__(self, config):
     self.config = config
 
-  def execute(self, migration, user=None, executeMigrations=True, printWhatWouldBe=False):
+  def execute(self, migration, user=None, executeMigrations=True, printWhatWouldBe=noopLogger):
     if user is None:
       command = [migration.file]
     else:
@@ -38,7 +38,6 @@ class MigrationExecutor(object):
     exitCode = migrationProcess.wait()
     return exitCode
 
-  def _simulateExecuteMigration(self, migration, command, printWhatWouldBe=False):
-    if printWhatWouldBe:
-      logger.info("Would run command: {}", command)
+  def _simulateExecuteMigration(self, migration, command, printWhatWouldBe=noopLogger):
+    printWhatWouldBe.info("Would run command: {}", command)
     return 0

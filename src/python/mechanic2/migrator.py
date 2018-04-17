@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from mechanic2.exceptions import MechanicException
 from mechanic2.env import MechanicEnv
 from mechanic2.migration import MechanicMigration
-from mechanic2.logger import logger
+from mechanic2.logger import logger, noopLogger
 from mechanic2.config import MechanicConfig
 from mechanic2.executor import MigrationExecutor
 
@@ -16,17 +16,17 @@ class Migrator(object):
     self.executor = executor
     self.env = env
 
-  def verifyMigration(self, migration, ignoreErrors=False):
+  def _verifyMigration(self, migration, ignoreErrors=False):
     if migration.isRootRequired() and not self.env.isEffectiveUserRoot():
       if ignoreErrors:
         logger.error("Error: {} requires root.", migration.name)
       else:
         raise MechanicException("Error: {} requires root.".format(migration.name))
 
-  def applyMigrations(self, migrations, ignoreErrors=False, executeMigrations=True, printWhatWouldBe=False):
+  def applyMigrations(self, migrations, ignoreErrors=False, executeMigrations=True, printWhatWouldBe=noopLogger):
     for migration in migrations:
       logger.info("Applying {}...", migration.name)
-      self.verifyMigration(migration, ignoreErrors=ignoreErrors)
+      self._verifyMigration(migration, ignoreErrors=ignoreErrors)
 
       user = None
       if (not migration.isSystemMigration() 
