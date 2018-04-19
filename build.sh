@@ -41,16 +41,19 @@ function buildTestContainer() {
 
 function runIntegrationTests() {
   for testDir in ${PROJECT_DIR}/integration-tests/*; do
-    docker run \
-	-v ${testDir}:/build \
-	-v ${PROJECT_DIR}/target:/target \
-	mechanic2-test:local /build/run.sh
-    TEST_RESULT=$?
-    if [ "x0" != "x${TEST_RESULT}" ]; then
-      echo "$(basename $testDir) failed with exit code ${TEST_RESULT}."
-      return 1
-    else
-      echo "$(basename $testDir) OK."
+    if [ -d "${testDir}" ]; then
+      testName=$(basename $testDir)
+      docker run \
+	-v ${PROJECT_DIR}:/build \
+	-w /build/integration-tests/${testName} \
+	mechanic2-test:local /build/integration-tests/${testName}/run.sh
+      TEST_RESULT=$?
+      if [ "x0" != "x${TEST_RESULT}" ]; then
+        echo "$(basename $testDir) failed with exit code ${TEST_RESULT}."
+        return 1
+      else
+        echo "$(basename $testDir) OK."
+      fi
     fi
   done
   echo "All integration tests OK."

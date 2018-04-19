@@ -1,22 +1,15 @@
 #!/bin/bash -ex
 
-sudo /target/bash-installer-*.sh
+source /build/integration-tests/testlib.sh
+
+installMechanicViaBashInstaller
 
 mkdir -p $HOME/.mechanic2/migration.d/
 
-echo -n "#!/bin/bash -ex
-touch \$HOME/marker
-" > $HOME/.mechanic2/migration.d/001_touch_home_file.sh
-chmod 755 $HOME/.mechanic2/migration.d/001_touch_home_file.sh
-cat $HOME/.mechanic2/migration.d/001_touch_home_file.sh
+givenAUserMigration
 
 sudo /usr/local/bin/mechanic2 migrate
 
-if [ ! -f $HOME/marker ]; then
-  exit 1
-fi
+assertFileExists "$HOME/marker"
+assertFileOwnerIs "$HOME/marker" build
 
-OWNER=$(stat -c '%U' $HOME/marker)
-if [ "xbuild" != "x${OWNER}" ]; then
-  exit 1
-fi

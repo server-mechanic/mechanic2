@@ -1,11 +1,14 @@
 #!/bin/bash -e
 
-sudo /target/bash-installer-*.sh
+source /build/integration-tests/testlib.sh
 
-/usr/local/bin/mechanic2 version
+installMechanicViaBashInstaller
+
+result=$(/usr/local/bin/mechanic2 version)
+
+assertNotEmpty "version" "${result}"
 
 sudo /usr/local/mechanic2/bin/uninstall.sh
 
-if [ -f /usr/local/bin/mechanic2 ]; then
-  exit 1
-fi
+assertFileAbsent "/usr/local/bin/mechanic2"
+assertFileAbsent "/usr/local/mechanic2"
