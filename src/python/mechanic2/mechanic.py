@@ -21,7 +21,10 @@ from mechanic2.collector import MigrationCollector
 from mechanic2.migrator import Migrator
 
 def _raiseError(*kargs):
-  raise MechanicException(message=kargs[0].format(kargs[1:]))
+  if len(kargs) == 0:
+    raise MechanicException(message="Unknown error.")
+
+  raise MechanicException(message=kargs[0].format(*kargs[1:]))
 
 def _logError(*kargs):
   logger.error(*kargs)

@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import sys
+import traceback
 
 from mechanic2.exceptions import MechanicException
 from mechanic2.mechanic import Mechanic
@@ -20,7 +21,7 @@ class MechanicCommand(object):
       else:
         traceback.print_exc()
       return 1
-    except Error as e:
+    except Exception as e:
       traceback.print_exc()
       return 1
     finally:

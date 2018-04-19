@@ -27,6 +27,16 @@ assertFileExists() {
   fi 
 }
 
+function assertEquals() {
+  local name="$1"
+  local expectedValue="$2"
+  local value="$3"
+  if [ "x${expectedValue}" != "x${value}" ]; then
+    echo "Expected ${name} to be ${expectedValue}, but was ${value}."
+    exit 1
+  fi
+}
+
 function assertNotEmpty() {
   local name="$1"
   local value="$2"
@@ -65,6 +75,17 @@ chmod 755 /root/.mechanic2/migration.d/005_touch_root_home_file.sh
 cat /root/.mechanic2/migration.d/005_touch_root_home_file.sh
 }
 
+givenAFailingUserMigration() {
+mkdir -p $HOME/.mechanic2/migration.d/
+
+echo -n "#!/bin/bash -e
+exit 1
+" > $HOME/.mechanic2/migration.d/001_fail.sh
+chmod 755 $HOME/.mechanic2/migration.d/001_fail.sh
+
+cat $HOME/.mechanic2/migration.d/001_fail.sh
+}
+
 givenAUserMigration() {
 # install user migration
 mkdir -p $HOME/.mechanic2/migration.d/
@@ -93,6 +114,13 @@ cd $LOCAL_DIR
 function verifySystemMigrationApplied() {
   if [ ! -f "/marker" ]; then
     echo "System migration marker /marker missing."
+    exit 1
+  fi
+}
+
+function verifyUserMigrationNotApplied() {
+  if [ -f "$HOME/marker" ]; then
+    echo "User migration marker $HOME/marker exists. Expected to be absent."
     exit 1
   fi
 }
