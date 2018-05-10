@@ -65,7 +65,7 @@ function unpack() {
 
 function generateUninstaller() {
   echo "Generating uninstaller..."
-  streamTar | tar tf - | grep -v -e '^usr/local/$' | grep -v -e '^usr/$' | sort -r | sed -r 's#^/(.*)$#/\\1#g' | (cat - <<EOB
+  streamTar | tar tf - | grep -v -e '^usr/bin/' | grep -v -e '^usr/local/$' | grep -v -e '^usr/$' | sort -r | sed -r 's#^/(.*)$#/\\1#g' | (cat - <<EOB
 #!/bin/bash -xe
 
 echo "Uninstalling..."

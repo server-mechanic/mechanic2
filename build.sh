@@ -13,12 +13,13 @@ function clean() {
 }
 
 function copyFiles() {
-  mkdir -p ${BUNDLE_BUILD_DIR}/usr/local/bin ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/ ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/
+  mkdir -p ${BUNDLE_BUILD_DIR}/usr/bin ${BUNDLE_BUILD_DIR}/usr/local/bin ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/ ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/
   cp -r ${SRC_DIR}/python/* ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/
   perl -i -pe "s#MECHANIC2_VERSION=\"\"#MECHANIC2_VERSION=\"${LONG_VERSION}\"#g" ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/lib/mechanic2/version.py
   touch ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/uninstall.sh
   cp ${SRC_DIR}/bash/mechanic2 ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/
   ln -s ../mechanic2/bin/mechanic2 ${BUNDLE_BUILD_DIR}/usr/local/bin/mechanic2
+  ln -s ../local/mechanic2/bin/mechanic2 ${BUNDLE_BUILD_DIR}/usr/bin/mechanic2
   find ${BUNDLE_BUILD_DIR} -type d -print0 | xargs -0 chmod 755
   find ${BUNDLE_BUILD_DIR} -type f -print0 | xargs -0 chmod 644
   chmod 755 ${BUNDLE_BUILD_DIR}/usr/local/mechanic2/bin/uninstall.sh
