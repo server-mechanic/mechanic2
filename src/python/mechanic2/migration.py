@@ -7,10 +7,11 @@ from __future__ import unicode_literals
 import re
 
 class MechanicMigration(object):
-  def __init__(self, file, name, systemMigration=False):
+  def __init__(self, file, name, metadata, systemMigration=False):
     self.file = file
     self.systemMigration = systemMigration
     self.name = name
+    self.metadata = metadata
 
   def isSystemMigration(self):
     return self.systemMigration == True

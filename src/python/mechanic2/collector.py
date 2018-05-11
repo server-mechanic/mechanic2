@@ -10,6 +10,7 @@ from mechanic2.logger import logger
 from mechanic2.migration import MechanicMigration
 from mechanic2.config import MechanicConfig
 from mechanic2.env import MechanicEnv
+from mechanic2.migration_metadata_reader import MigrationMetadataReader
 
 class MigrationCollector(object):
   def __init__(self):
@@ -47,6 +48,10 @@ class MigrationCollector(object):
           file = os.path.join(dir, file)
           if os.path.isfile(file):
              logger.debug("Found migration at {}...", file)
-             migration = MechanicMigration(file=file,name=os.path.basename(file),systemMigration=systemMigration)
+             metadata = MigrationMetadataReader(file).readMetadata()
+             if metadata.get("mechanic-migration-repeatable", None) == None:
+               logger.warn("No metadata present in {}. Default behaviour will change in next version, please add '# mechanic-migration-repeatable: true' to migration file to retain current behaviour.", file)
+
+             migration = MechanicMigration(file=file,metadata=metadata,name=os.path.basename(file),systemMigration=systemMigration)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)

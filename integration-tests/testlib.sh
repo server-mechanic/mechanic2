@@ -55,6 +55,7 @@ cat - <<EOB | sudo bash
 #!/bin/bash
 mkdir -p /etc/mechanic2/migration.d/
 echo -n "#!/bin/bash -e
+# mechanic-migration-repeatable: true
 touch /marker
 " > /etc/mechanic2/migration.d/001_touch_root.sh
 chmod 755 /etc/mechanic2/migration.d/001_touch_root.sh
@@ -68,6 +69,7 @@ givenARootUserMigration() {
 mkdir -p /root/.mechanic2/migration.d/
 
 echo -n "#!/bin/bash -e
+# mechanic-migration-repeatable: true
 touch /root/marker
 " > /root/.mechanic2/migration.d/005_touch_root_home_file.sh
 chmod 755 /root/.mechanic2/migration.d/005_touch_root_home_file.sh
@@ -79,6 +81,7 @@ givenAFailingUserMigration() {
 mkdir -p $HOME/.mechanic2/migration.d/
 
 echo -n "#!/bin/bash -e
+# mechanic-migration-repeatable: true
 exit 1
 " > $HOME/.mechanic2/migration.d/001_fail.sh
 chmod 755 $HOME/.mechanic2/migration.d/001_fail.sh
@@ -91,6 +94,7 @@ givenAUserMigration() {
 mkdir -p $HOME/.mechanic2/migration.d/
 
 echo -n "#!/bin/bash -e
+# mechanic-migration-repeatable: true
 touch $HOME/marker
 " > $HOME/.mechanic2/migration.d/002_touch_home_file.sh
 chmod 755 $HOME/.mechanic2/migration.d/002_touch_home_file.sh
@@ -104,6 +108,7 @@ LOCAL_DIR=$HOME/a/b/c
 mkdir -p $LOCAL_DIR/.mechanic2/migration.d/
 
 echo -n "#!/bin/bash -e
+# mechanic-migration-repeatable: true
 touch $HOME/marker.local
 " > $LOCAL_DIR/.mechanic2/migration.d/003_touch_local_file.sh
 chmod 755 $LOCAL_DIR/.mechanic2/migration.d/003_touch_local_file.sh
