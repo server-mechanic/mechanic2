@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
+import re
 
 from mechanic2.logger import logger
 from mechanic2.migration import MechanicMigration
@@ -52,6 +53,8 @@ class MigrationCollector(object):
              if metadata.get("mechanic-migration-repeatable", None) == None:
                logger.warn("No metadata present in {}. Default behaviour will change in next version, please add '# mechanic-migration-repeatable: true' to migration file to retain current behaviour.", file)
 
-             migration = MechanicMigration(file=file,metadata=metadata,name=os.path.basename(file),systemMigration=systemMigration)
+             migrationName = os.path.basename(file)
+             rootRequired = metadata.get("mechanic-root-required", None) == True or re.match("^.*as[_]?(root|admin)\\..*$", migrationName.lower())
+             migration = MechanicMigration(file=file,metadata=metadata,name=migrationName,systemMigration=systemMigration,rootRequired=rootRequired)
              if not migration.file in [m.file for m in migrations]:
                migrations.append(migration)
